@@ -104,9 +104,22 @@ func (kp *KafkaProducer) processDeliveryEvent(e kafka.Event) {
 }
 
 // SendMessage sends a message to Kafka with retries.
-func (kp *KafkaProducer) SendMessage(ctx context.Context, payload payload.Payload) error {
-	serializedPayload, err := payload.Serialize()
+func (kp *KafkaProducer) SendMessage(ctx context.Context, message []byte) error {
+	// Deserialize the incoming message into a Payload struct
+	p, err := payload.Deserialize(message)
 	if err != nil {
+		kp.logger.Error("Failed to deserialize payload",
+			zap.Error(err),
+		)
+		return err // Early return if deserialization fails
+	}
+
+	// Serialize the Payload struct into a byte slice (e.g., JSON)
+	serializedPayload, err := p.Serialize()
+	if err != nil {
+		kp.logger.Error("Failed to serialize payload",
+			zap.Error(err),
+		)
 		return err
 	}
 
